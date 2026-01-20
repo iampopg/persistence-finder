@@ -195,6 +195,11 @@ def check_scheduled_tasks():
                 if current_task and task_data:
                     # Filter out Microsoft default tasks
                     if not current_task.startswith('\\Microsoft\\Windows\\'):
+                        # Check signature of task executable
+                        if 'command' in task_data:
+                            file_path = extract_file_path(task_data['command'])
+                            if file_path and os.path.exists(file_path):
+                                task_data['signed_by_ms'] = check_digital_signature(file_path)
                         tasks[current_task] = task_data
                     current_task = None
                     task_data = {}
