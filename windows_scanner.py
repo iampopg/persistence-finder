@@ -50,6 +50,29 @@ LEGITIMATE_MONITORS = {
     'USB Monitor', 'WSD Port'
 }
 
+# Security tools that should NOT be disabled
+SECURITY_TOOLS = {'SecurityHealth', 'WinDefend', 'MsMpEng'}
+
+# Helper to check digital signature
+def check_digital_signature(file_path):
+    """Check if file is digitally signed by Microsoft"""
+    try:
+        result = subprocess.run(
+            ['powershell', '-Command', 
+             f'(Get-AuthenticodeSignature "{file_path}").Status'],
+            capture_output=True, text=True, timeout=5
+        )
+        if 'Valid' in result.stdout:
+            signer = subprocess.run(
+                ['powershell', '-Command',
+                 f'(Get-AuthenticodeSignature "{file_path}").SignerCertificate.Subject'],
+                capture_output=True, text=True, timeout=5
+            )
+            return 'Microsoft' in signer.stdout
+        return False
+    except:
+        return None
+
 # Helper function to get registry key timestamp
 def get_reg_key_timestamp(hive, path):
     """Get last modified time of registry key"""
@@ -212,7 +235,14 @@ def check_accessibility_features():
         if os.path.exists(file):
             try:
                 stat = os.stat(file)
-                results[file] = f"Size: {stat.st_size}, Modified: {stat.st_mtime}"
+                signed = check_digital_signature(file)
+                is_suspicious = signed == False  # Unsigned or wrong signer
+                results[file] = {
+                    'size': stat.st_size,
+                    'modified': stat.st_mtime,
+                    'signed_by_ms': signed,
+                    'is_suspicious': is_suspicious
+                }
             except:
                 pass
     return results
@@ -513,8 +543,25 @@ def check_startup_approved():
                 while True:
                     try:
                         name, value, _ = reg.EnumValue(key, i)
+                        # Parse binary data: Byte 0 = 0x02 (Enabled) or 0x03 (Disabled)
+                        status = 'Unknown'
+                        is_suspicious = False
+                        
+                        if isinstance(value, bytes) and len(value) >= 1:
+                            status_byte = value[0]
+                            status = 'Enabled' if status_byte == 0x02 else 'Disabled' if status_byte == 0x03 else 'Unknown'
+                            
+                            # Flag if security tool is disabled
+                            if status == 'Disabled' and any(tool in name for tool in SECURITY_TOOLS):
+                                is_suspicious = True
+                            # Flag if unknown program is enabled
+                            elif status == 'Enabled' and name not in LEGITIMATE_RUN_KEYS:
+                                is_suspicious = True
+                        
                         results[f"{hive_name}\\{path}\\{name}"] = {
-                            'modified': modified
+                            'modified': modified,
+                            'status': status,
+                            'is_suspicious': is_suspicious
                         }
                         i += 1
                     except OSError:
