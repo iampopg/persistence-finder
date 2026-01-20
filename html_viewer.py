@@ -88,7 +88,7 @@ def generate_html(scan_files):
         selected = 'selected' if i == 0 else ''
         html += f'                    <option value="{scan_file}" {selected}>{basename}</option>\n'
     
-    html += """
+    html += "    </script>\n"
                 </select>
             </div>
             <div>
@@ -117,17 +117,21 @@ def generate_html(scan_files):
     <script>
     const scans = {};
     let currentData = null;
+    </script>
 """
     
+    # Embed each scan file as a separate script block
     for scan_file in scan_files:
         try:
-            with open(scan_file, 'r') as f:
+            with open(scan_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                html += f"    scans['{scan_file}'] = {json.dumps(data)};\n"
-        except:
-            pass
+                # Use a safer embedding method
+                json_data = json.dumps(data, ensure_ascii=True)
+                html += f"    <script>scans['{scan_file}'] = {json_data};</script>\n"
+        except Exception as e:
+            print(f"Warning: Could not load {scan_file}: {e}")
     
-    html += """
+    html += "    <script>\n"
     
     function showDetails(key, value) {
         document.getElementById('modalTitle').textContent = key;
