@@ -8,6 +8,8 @@ A powerful cross-platform tool to detect persistence mechanisms on Windows and L
 
 > **Created by [@iampopg](https://github.com/iampopg)**
 
+![Persistence Finder Web Interface](persistence-finder.jpg)
+
 ---
 
 ## ⚠️ DISCLAIMER
