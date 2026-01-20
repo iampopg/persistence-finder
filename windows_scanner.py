@@ -53,6 +53,20 @@ LEGITIMATE_MONITORS = {
 # Security tools that should NOT be disabled
 SECURITY_TOOLS = {'SecurityHealth', 'WinDefend', 'MsMpEng'}
 
+# Helper to extract file path from command string
+def extract_file_path(command_str):
+    """Extract executable path from command string"""
+    import re
+    # Remove quotes and get first part
+    command_str = command_str.strip('"').strip("'")
+    # Extract path before first space or argument
+    match = re.match(r'^([^\s]+\.(?:exe|dll|sys|bat|cmd|ps1))', command_str, re.IGNORECASE)
+    if match:
+        path = match.group(1)
+        # Expand environment variables
+        return os.path.expandvars(path)
+    return None
+
 # Helper to check digital signature
 def check_digital_signature(file_path):
     """Check if file is digitally signed by Microsoft"""
@@ -110,8 +124,18 @@ def check_registry_run_keys():
                     try:
                         name, value, _ = reg.EnumValue(key, i)
                         is_suspicious = name not in LEGITIMATE_RUN_KEYS
+                        
+                        # Check signature of executable
+                        file_path = extract_file_path(value)
+                        signed = None
+                        if file_path and os.path.exists(file_path):
+                            signed = check_digital_signature(file_path)
+                            if signed == False:
+                                is_suspicious = True
+                        
                         results[f"{hive_name}\\{path}\\{name}"] = {
                             'value': value,
+                            'signed_by_ms': signed,
                             'is_suspicious': is_suspicious
                         }
                         i += 1
@@ -132,8 +156,20 @@ def check_startup_folders():
         if os.path.exists(folder):
             try:
                 files = os.listdir(folder)
-                if files:
-                    results[folder] = files
+                file_details = []
+                for f in files:
+                    if f.lower().endswith(('.exe', '.dll', '.bat', '.cmd', '.lnk')):
+                        fpath = os.path.join(folder, f)
+                        signed = check_digital_signature(fpath)
+                        file_details.append({
+                            'name': f,
+                            'signed_by_ms': signed,
+                            'is_suspicious': signed == False
+                        })
+                    else:
+                        file_details.append({'name': f})
+                if file_details:
+                    results[folder] = file_details
             except PermissionError:
                 pass
     return results
@@ -264,7 +300,19 @@ def check_appinit_dlls():
             try:
                 value, _ = reg.QueryValueEx(key, "AppInit_DLLs")
                 if value:
-                    results[f"HKLM\\{path}\\AppInit_DLLs"] = value
+                    # Check signature of DLL
+                    dll_path = os.path.expandvars(value.strip())
+                    signed = None
+                    is_suspicious = True
+                    if os.path.exists(dll_path):
+                        signed = check_digital_signature(dll_path)
+                        is_suspicious = signed == False
+                    
+                    results[f"HKLM\\{path}\\AppInit_DLLs"] = {
+                        'value': value,
+                        'signed_by_ms': signed,
+                        'is_suspicious': is_suspicious
+                    }
             except:
                 pass
             reg.CloseKey(key)
@@ -344,8 +392,18 @@ def check_netsh_helpers():
             try:
                 name, value, _ = reg.EnumValue(key, i)
                 is_suspicious = value not in LEGITIMATE_NETSH
+                
+                # Check signature of DLL
+                dll_path = os.path.join(os.environ.get('SystemRoot', 'C:\\Windows'), 'System32', value)
+                signed = None
+                if os.path.exists(dll_path):
+                    signed = check_digital_signature(dll_path)
+                    if signed == False:
+                        is_suspicious = True
+                
                 results[f"HKLM\\{path}\\{name}"] = {
                     'value': value,
+                    'signed_by_ms': signed,
                     'is_suspicious': is_suspicious
                 }
                 i += 1
@@ -371,7 +429,25 @@ def check_port_monitors():
             try:
                 subkey_name = reg.EnumKey(key, i)
                 is_suspicious = subkey_name not in LEGITIMATE_MONITORS
-                results[f"HKLM\\{path}\\{subkey_name}"] = {'is_suspicious': is_suspicious}
+                
+                # Try to get DLL path from subkey
+                signed = None
+                try:
+                    subkey = reg.OpenKey(key, subkey_name)
+                    dll_name, _ = reg.QueryValueEx(subkey, "Driver")
+                    dll_path = os.path.join(os.environ.get('SystemRoot', 'C:\\Windows'), 'System32', dll_name)
+                    if os.path.exists(dll_path):
+                        signed = check_digital_signature(dll_path)
+                        if signed == False:
+                            is_suspicious = True
+                    reg.CloseKey(subkey)
+                except:
+                    pass
+                
+                results[f"HKLM\\{path}\\{subkey_name}"] = {
+                    'signed_by_ms': signed,
+                    'is_suspicious': is_suspicious
+                }
                 i += 1
             except OSError:
                 break
