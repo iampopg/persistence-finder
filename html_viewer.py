@@ -304,10 +304,11 @@ def generate_html(scan_files):
                     }
                     
                     const valueStr = JSON.stringify(value).replace(/"/g, '&quot;').replace(/'/g, "\\'");
+                    const keyEsc = key.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                     
                     html += `
                         <tr class="${rowClass}" data-modified="${modified}">
-                            <td><span class="clickable" onclick='showDetails(\`${key}\`, JSON.parse(\`${valueStr}\`))'>${escapeHtml(key)}</span></td>
+                            <td><span class="clickable" onclick="showDetails('${keyEsc}', JSON.parse('${valueStr}'))">${key}</span></td>
                             <td><span class="timestamp">${modified}</span></td>
                             <td>${size}</td>
                             <td>${status}</td>
