@@ -27,8 +27,16 @@ A powerful cross-platform tool to detect persistence mechanisms on Windows and L
 ### 🎯 Detection Capabilities
 
 - **✅ 15 Linux Persistence Techniques** (Production Ready)
-- **✅ 20 Windows Techniques** (Ready for Testing)
+- **✅ 20 Windows Techniques** (Production Ready)
 - **🚧 6 macOS Techniques** (Coming Soon)
+
+### 🔬 Forensic Analysis Features
+
+- **File Hashing** - MD5/SHA256 for IOC tracking
+- **Digital Signatures** - Verify Microsoft-signed binaries
+- **Timestamps** - Created/Modified/Accessed dates
+- **Registry Metadata** - Last modified timestamps
+- **File Metadata** - Size, permissions, full paths
 
 ### 🎨 Beautiful Output
 
@@ -42,8 +50,9 @@ A powerful cross-platform tool to detect persistence mechanisms on Windows and L
 
 - Auto-save all scans to JSON format
 - Organized in `scans/` directory
-- Full metadata included (system info, timestamps)
+- Full forensic metadata included
 - Easy to parse for automation
+- Timesketch/TheHive export support
 
 ### 🌐 Interactive Web Viewer
 
@@ -52,6 +61,30 @@ A powerful cross-platform tool to detect persistence mechanisms on Windows and L
 - Date filtering capabilities
 - Collapsible categories
 - Export to JSON
+
+---
+
+## 🎯 Use Cases
+
+### 🚨 Incident Response
+- Quickly identify persistence mechanisms during active incidents
+- Export findings to SIEM/TheHive for case management
+- Timeline analysis with Timesketch integration
+
+### 🔍 Threat Hunting
+- Proactive hunting for APT persistence
+- Baseline comparison to detect anomalies
+- Hash-based IOC tracking
+
+### 🧪 Malware Analysis
+- Identify malware persistence techniques
+- Digital signature verification
+- Forensic metadata collection
+
+### 🛡️ Security Auditing
+- Regular security assessments
+- Compliance checking
+- Vulnerability identification
 
 ---
 

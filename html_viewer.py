@@ -207,4 +207,10 @@ if __name__ == '__main__':
         f.write(html)
     
     print("✅ Generated: scan_results.html")
-    print("🌐 Open scan_results.html in your browser")
+    print("🌐 Opening in browser...")
+    
+    # Auto-open in browser
+    import webbrowser
+    import os
+    file_path = os.path.abspath('scan_results.html')
+    webbrowser.open('file://' + file_path)
