@@ -275,28 +275,35 @@ def generate_html(scan_files):
                 html += '<table><thead><tr><th>Item</th><th>Modified</th><th>Size</th><th>Status</th></tr></thead><tbody>';
                 
                 for (const [key, value] of Object.entries(items)) {
-                    const isSuspicious = value.is_suspicious || (value.suspicious_commands && value.suspicious_commands !== 'None');
-                    const rowClass = isSuspicious ? 'suspicious-row' : '';
+                    // Handle both old string format and new dict format
+                    let isSuspicious = false;
+                    let displayValue = value;
+                    let modified = 'N/A';
+                    let size = '';
                     
-                    let modified = value.modified || 'N/A';
-                    let size = value.size || '';
-                    let status = '';
-                    
-                    if (typeof value === 'object') {
-                        if (isSuspicious) {
-                            status = '<span class="badge badge-danger">⚠️ SUSPICIOUS</span>';
-                        } else {
-                            status = '<span class="badge badge-success">✓ OK</span>';
-                        }
-                        
-                        if (value.permissions) status += ` <span class="badge badge-warning">${value.permissions}</span>`;
+                    if (typeof value === 'object' && value !== null) {
+                        isSuspicious = value.is_suspicious || false;
+                        displayValue = value.value || value.command || JSON.stringify(value);
+                        modified = value.modified || value.next_run || 'N/A';
+                        size = value.size || '';
+                    } else {
+                        displayValue = String(value);
                     }
                     
-                    const valueStr = JSON.stringify(value).replace(/"/g, '&quot;');
+                    const rowClass = isSuspicious ? 'suspicious-row' : '';
+                    let status = '';
+                    
+                    if (isSuspicious) {
+                        status = '<span class="badge badge-danger">⚠️ SUSPICIOUS</span>';
+                    } else {
+                        status = '<span class="badge badge-success">✓ OK</span>';
+                    }
+                    
+                    const valueStr = JSON.stringify(value).replace(/"/g, '&quot;').replace(/'/g, "\\'");
                     
                     html += `
                         <tr class="${rowClass}" data-modified="${modified}">
-                            <td><span class="clickable" onclick="showDetails('${key.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', JSON.parse('${valueStr}'))">${key}</span></td>
+                            <td><span class="clickable" onclick='showDetails(\`${key}\`, JSON.parse(\`${valueStr}\`))'>${escapeHtml(key)}</span></td>
                             <td><span class="timestamp">${modified}</span></td>
                             <td>${size}</td>
                             <td>${status}</td>

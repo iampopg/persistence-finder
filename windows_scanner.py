@@ -26,7 +26,7 @@ LEGITIMATE_SERVICES = {
     'Themes', 'TimeBrokerSvc', 'TokenBroker', 'TrkWks', 'UltraViewService', 'UserManager',
     'UsoSvc', 'VaultSvc', 'VBoxService', 'WaaSMedicSvc', 'Wcmsvc', 'WdiServiceHost',
     'WinDefend', 'WinHttpAutoProxySvc', 'Winmgmt', 'wlidsvc', 'WpnService', 'wscsvc',
-    'WSearch', 'wuauserv'
+    'WSearch', 'wuauserv', 'SSDPSRV', 'WdiSystemHost'
 }
 
 LEGITIMATE_IFEO = {
