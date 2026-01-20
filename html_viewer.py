@@ -125,7 +125,7 @@ def generate_html(scan_files):
         try:
             with open(scan_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Use a safer embedding method
+                # Directly embed as JavaScript object (no JSON.parse needed)
                 json_data = json.dumps(data, ensure_ascii=True)
                 html += f"    <script>scans['{scan_file}'] = {json_data};</script>\n"
         except Exception as e:
