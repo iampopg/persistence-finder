@@ -1,6 +1,7 @@
 import os
 import subprocess
 import logging
+from forensic_helpers import get_file_metadata, get_registry_metadata
 
 try:
     import winreg as reg
@@ -130,19 +131,33 @@ def check_registry_run_keys():
                         name, value, _ = reg.EnumValue(key, i)
                         is_suspicious = name not in LEGITIMATE_RUN_KEYS
                         
+                        # Get registry key metadata
+                        reg_metadata = get_registry_metadata(hive, path)
+                        
                         # Check signature of executable
                         file_path = extract_file_path(value)
                         signed = None
+                        file_metadata = None
+                        
                         if file_path and os.path.exists(file_path):
                             signed = check_digital_signature(file_path)
+                            file_metadata = get_file_metadata(file_path)
                             if signed == False:
                                 is_suspicious = True
                         
-                        results[f"{hive_name}\\{path}\\{name}"] = {
+                        result = {
                             'value': value,
                             'signed_by_ms': signed,
                             'is_suspicious': is_suspicious
                         }
+                        
+                        # Add forensic metadata
+                        if reg_metadata:
+                            result['registry_modified'] = reg_metadata['last_modified']
+                        if file_metadata:
+                            result.update(file_metadata)
+                        
+                        results[f"{hive_name}\\{path}\\{name}"] = result
                         i += 1
                     except OSError:
                         break
@@ -166,11 +181,18 @@ def check_startup_folders():
                     if f.lower().endswith(('.exe', '.dll', '.bat', '.cmd', '.lnk')):
                         fpath = os.path.join(folder, f)
                         signed = check_digital_signature(fpath)
-                        file_details.append({
+                        file_metadata = get_file_metadata(fpath)
+                        
+                        file_info = {
                             'name': f,
                             'signed_by_ms': signed,
                             'is_suspicious': signed == False
-                        })
+                        }
+                        
+                        if file_metadata:
+                            file_info.update(file_metadata)
+                        
+                        file_details.append(file_info)
                     else:
                         file_details.append({'name': f})
                 if file_details:
@@ -200,6 +222,9 @@ def check_scheduled_tasks():
                             file_path = extract_file_path(task_data['command'])
                             if file_path and os.path.exists(file_path):
                                 task_data['signed_by_ms'] = check_digital_signature(file_path)
+                                file_metadata = get_file_metadata(file_path)
+                                if file_metadata:
+                                    task_data.update(file_metadata)
                         tasks[current_task] = task_data
                     current_task = None
                     task_data = {}
@@ -236,7 +261,27 @@ def check_services():
             if line.startswith('SERVICE_NAME:'):
                 name = line.split(':', 1)[1].strip()
                 is_suspicious = name not in LEGITIMATE_SERVICES and not name.endswith('_1016dd')
-                services[name] = {'is_suspicious': is_suspicious}
+                
+                # Get service binary path and check signature
+                signed = None
+                try:
+                    qc_output = subprocess.check_output(['sc', 'qc', name], stderr=subprocess.DEVNULL, timeout=2).decode(errors='ignore')
+                    for qc_line in qc_output.split('\n'):
+                        if 'BINARY_PATH_NAME' in qc_line:
+                            binary_path = qc_line.split(':', 1)[1].strip()
+                            file_path = extract_file_path(binary_path)
+                            if file_path and os.path.exists(file_path):
+                                signed = check_digital_signature(file_path)
+                                if signed == False:
+                                    is_suspicious = True
+                            break
+                except:
+                    pass
+                
+                services[name] = {
+                    'is_suspicious': is_suspicious,
+                    'signed_by_ms': signed
+                }
         return services
     except:
         return {}
@@ -258,7 +303,18 @@ def check_winlogon():
             for val in values_to_check:
                 try:
                     value, _ = reg.QueryValueEx(key, val)
-                    results[f"HKLM\\{path}\\{val}"] = value
+                    # Check signature
+                    file_path = extract_file_path(value)
+                    signed = None
+                    is_suspicious = False
+                    if file_path and os.path.exists(file_path):
+                        signed = check_digital_signature(file_path)
+                        is_suspicious = signed == False
+                    results[f"HKLM\\{path}\\{val}"] = {
+                        'value': value,
+                        'signed_by_ms': signed,
+                        'is_suspicious': is_suspicious
+                    }
                 except FileNotFoundError:
                     pass
             reg.CloseKey(key)
@@ -477,8 +533,22 @@ def check_auth_packages():
     try:
         key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, path)
         try:
-            value, _ = reg.QueryValueEx(key, "Authentication Packages")
-            results[f"HKLM\\{path}\\Authentication Packages"] = value
+            packages, _ = reg.QueryValueEx(key, "Authentication Packages")
+            # Check each package DLL
+            if isinstance(packages, list):
+                for pkg in packages:
+                    dll_path = os.path.join(os.environ.get('SystemRoot', 'C:\\Windows'), 'System32', pkg + '.dll')
+                    signed = None
+                    is_suspicious = False
+                    if os.path.exists(dll_path):
+                        signed = check_digital_signature(dll_path)
+                        is_suspicious = signed == False
+                    results[f"HKLM\\{path}\\{pkg}"] = {
+                        'signed_by_ms': signed,
+                        'is_suspicious': is_suspicious
+                    }
+            else:
+                results[f"HKLM\\{path}\\Authentication Packages"] = {'value': packages}
         except:
             pass
         reg.CloseKey(key)
