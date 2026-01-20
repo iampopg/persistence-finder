@@ -389,7 +389,7 @@ def main():
     html_content = generate_html(scan_files)
     html_file = 'scan_results.html'
     
-    with open(html_file, 'w') as f:
+    with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
     
     print(f"✅ Generated: {html_file}")

@@ -116,21 +116,12 @@ def main():
             try:
                 input()
                 print(f"\n{Fore.CYAN}🚀 Launching web viewer...{Style.RESET_ALL}")
-                print(f"{Fore.YELLOW}   Opening results in browser...{Style.RESET_ALL}")
-                print(f"{Fore.YELLOW}   Press Ctrl+C to stop{Style.RESET_ALL}\n")
+                print(f"{Fore.YELLOW}   Opening results in browser...{Style.RESET_ALL}\n")
                 
                 import subprocess
-                # Try streamlit first, fallback to HTML viewer
-                try:
-                    subprocess.run(['streamlit', 'run', 'web_viewer.py'])
-                except (FileNotFoundError, Exception):
-                    print(f"{Fore.YELLOW}Streamlit unavailable, using HTML viewer...{Style.RESET_ALL}")
-                    subprocess.run(['python3', 'html_viewer.py'])
+                subprocess.run([sys.executable, 'html_viewer.py'])
             except KeyboardInterrupt:
                 print(f"\n{Fore.YELLOW}Skipped web viewer{Style.RESET_ALL}")
-            except FileNotFoundError:
-                print(f"\n{Fore.RED}❌ Streamlit not installed. Install with: pip install streamlit{Style.RESET_ALL}")
-                print(f"{Fore.CYAN}   Or run manually: streamlit run web_viewer.py{Style.RESET_ALL}")
         
         print()
 

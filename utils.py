@@ -59,29 +59,48 @@ def print_item(key, value, indent=2, verbose=False):
         is_suspicious = value.get('is_suspicious', False)
         key_color = Fore.RED if is_suspicious else Fore.CYAN
         
-        print(f"{spaces}{Fore.GREEN}• {key_color}{key}:{Style.RESET_ALL}")
-        if is_suspicious:
-            print(f"{spaces}  {Fore.RED}⚠️  SUSPICIOUS COMMANDS DETECTED!{Style.RESET_ALL}")
-        
-        for k, v in value.items():
-            if k == 'is_suspicious':  # Skip internal flag
-                continue
-            elif k == 'suspicious_commands' and v and v != 'None':
-                # Highlight suspicious commands in red
-                print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL} {Fore.RED}{v}{Style.RESET_ALL}")
-            elif isinstance(v, list):
-                print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL}")
-                for item in v:
-                    if isinstance(item, str) and len(item) > 100:
-                        print(f"{spaces}    {Fore.WHITE}{item[:100]}...{Style.RESET_ALL}")
-                    else:
-                        print(f"{spaces}    {Fore.WHITE}{item}{Style.RESET_ALL}")
-            elif isinstance(v, dict):
-                print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL}")
-                for dk, dv in v.items():
-                    print(f"{spaces}    {Fore.CYAN}{dk}:{Style.RESET_ALL} {Fore.WHITE}{dv}{Style.RESET_ALL}")
+        # For scheduled tasks, show detailed info
+        if 'next_run' in value or 'status' in value:
+            print(f"{spaces}{Fore.GREEN}• {key_color}{key}:{Style.RESET_ALL}")
+            if is_suspicious:
+                print(f"{spaces}  {Fore.RED}⚠️  SUSPICIOUS TASK!{Style.RESET_ALL}")
+            if 'status' in value:
+                print(f"{spaces}  {Fore.YELLOW}status:{Style.RESET_ALL} {Fore.WHITE}{value['status']}{Style.RESET_ALL}")
+            if 'next_run' in value:
+                print(f"{spaces}  {Fore.YELLOW}next_run:{Style.RESET_ALL} {Fore.MAGENTA}{value['next_run']}{Style.RESET_ALL}")
+            if 'author' in value:
+                print(f"{spaces}  {Fore.YELLOW}author:{Style.RESET_ALL} {Fore.WHITE}{value['author']}{Style.RESET_ALL}")
+            if 'command' in value and len(value['command']) < 100:
+                print(f"{spaces}  {Fore.YELLOW}command:{Style.RESET_ALL} {Fore.WHITE}{value['command']}{Style.RESET_ALL}")
+        else:
+            print(f"{spaces}{Fore.GREEN}• {key_color}{key}:{Style.RESET_ALL}", end='')
+            if is_suspicious:
+                print(f" {Fore.RED}⚠️  SUSPICIOUS!{Style.RESET_ALL}")
             else:
-                print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL} {Fore.WHITE}{v}{Style.RESET_ALL}")
+                print()
+            
+            for k, v in value.items():
+                if k == 'is_suspicious':  # Skip internal flag
+                    continue
+                elif k == 'suspicious_commands' and v and v != 'None':
+                    # Highlight suspicious commands in red
+                    print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL} {Fore.RED}{v}{Style.RESET_ALL}")
+                elif k == 'value':
+                    # Show value directly without extra nesting
+                    print(f"{spaces}  {Fore.WHITE}{v}{Style.RESET_ALL}")
+                elif isinstance(v, list):
+                    print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL}")
+                    for item in v:
+                        if isinstance(item, str) and len(item) > 100:
+                            print(f"{spaces}    {Fore.WHITE}{item[:100]}...{Style.RESET_ALL}")
+                        else:
+                            print(f"{spaces}    {Fore.WHITE}{item}{Style.RESET_ALL}")
+                elif isinstance(v, dict):
+                    print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL}")
+                    for dk, dv in v.items():
+                        print(f"{spaces}    {Fore.CYAN}{dk}:{Style.RESET_ALL} {Fore.WHITE}{dv}{Style.RESET_ALL}")
+                else:
+                    print(f"{spaces}  {Fore.YELLOW}{k}:{Style.RESET_ALL} {Fore.WHITE}{v}{Style.RESET_ALL}")
     elif isinstance(value, str) and len(value) > 200 and not verbose:
         # For long strings (like file contents), show preview unless verbose
         lines = value.split('\n')

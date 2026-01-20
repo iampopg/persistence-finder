@@ -7,6 +7,48 @@ try:
 except ImportError:
     reg = None
 
+# Known legitimate entries
+LEGITIMATE_RUN_KEYS = {
+    'SecurityHealth', 'VBoxTray', 'VMware User Process', 'VMware VM3DService Process',
+    'OneDrive', 'OneDriveSetup', 'MicrosoftEdgeAutoLaunch'
+}
+
+LEGITIMATE_SERVICES = {
+    'AnyDesk', 'AppXSvc', 'AudioEndpointBuilder', 'Audiosrv', 'BFE', 'BrokerInfrastructure',
+    'camsvc', 'CDPSvc', 'CoreMessagingRegistrar', 'CryptSvc', 'DcomLaunch', 'DevQueryBroker',
+    'Dhcp', 'DiagTrack', 'DispBrokerDesktopSvc', 'Dnscache', 'DoSvc', 'DPS', 'DusmSvc',
+    'EventLog', 'EventSystem', 'FontCache', 'gpsvc', 'IKEEXT', 'InstallService', 'iphlpsvc',
+    'KeyIso', 'LanmanServer', 'LanmanWorkstation', 'lfsvc', 'LicenseManager', 'lmhosts',
+    'LSM', 'MDCoreSvc', 'mpssvc', 'NcbService', 'netprofm', 'NgcSvc', 'NlaSvc', 'nsi',
+    'PlugPlay', 'PolicyAgent', 'Power', 'ProfSvc', 'RasMan', 'RmSvc', 'RpcEptMapper', 'RpcSs',
+    'SamSs', 'Schedule', 'SecurityHealthService', 'SENS', 'ShellHWDetection', 'Spooler',
+    'SstpSvc', 'StateRepository', 'StorSvc', 'SysMain', 'SystemEventsBroker', 'TabletInputService',
+    'Themes', 'TimeBrokerSvc', 'TokenBroker', 'TrkWks', 'UltraViewService', 'UserManager',
+    'UsoSvc', 'VaultSvc', 'VBoxService', 'WaaSMedicSvc', 'Wcmsvc', 'WdiServiceHost',
+    'WinDefend', 'WinHttpAutoProxySvc', 'Winmgmt', 'wlidsvc', 'WpnService', 'wscsvc',
+    'WSearch', 'wuauserv'
+}
+
+LEGITIMATE_IFEO = {
+    'ExtExport.exe', 'ie4uinit.exe', 'ieinstal.exe', 'ielowutil.exe', 'ieUnatt.exe',
+    'iexplore.exe', 'MicrosoftEdgeUpdate.exe', 'MRT.exe', 'mscorsvw.exe', 'msfeedssync.exe',
+    'mshta.exe', 'MsMpEng.exe', 'MsSense.exe', 'ngen.exe', 'ngentask.exe', 'PresentationHost.exe',
+    'PrintDialog.exe', 'PrintIsolationHost.exe', 'runtimebroker.exe', 'splwow64.exe',
+    'spoolsv.exe', 'svchost.exe', 'SystemSettings.exe', 'wpr.exe', 'wprui.exe'
+}
+
+LEGITIMATE_NETSH = {
+    'ifmon.dll', 'rasmontr.dll', 'authfwcfg.dll', 'dhcpcmonitor.dll', 'dot3cfg.dll',
+    'fwcfg.dll', 'hnetmon.dll', 'netiohlp.dll', 'nettrace.dll', 'nshhttp.dll',
+    'nshipsec.dll', 'nshwfp.dll', 'p2pnetsh.dll', 'rpcnsh.dll', 'WcnNetsh.dll',
+    'whhelper.dll', 'wlancfg.dll', 'wshelper.dll', 'wwancfg.dll', 'peerdistsh.dll'
+}
+
+LEGITIMATE_MONITORS = {
+    'Appmon', 'Local Port', 'Microsoft Shared Fax Monitor', 'Standard TCP/IP Port',
+    'USB Monitor', 'WSD Port'
+}
+
 # ============================================================================
 # 1. Registry Run Keys/Startup Folder
 # ============================================================================
@@ -30,7 +72,11 @@ def check_registry_run_keys():
                 while True:
                     try:
                         name, value, _ = reg.EnumValue(key, i)
-                        results[f"{hive_name}\\{path}\\{name}"] = value
+                        is_suspicious = name not in LEGITIMATE_RUN_KEYS
+                        results[f"{hive_name}\\{path}\\{name}"] = {
+                            'value': value,
+                            'is_suspicious': is_suspicious
+                        }
                         i += 1
                     except OSError:
                         break
@@ -60,11 +106,41 @@ def check_startup_folders():
 # ============================================================================
 def check_scheduled_tasks():
     try:
-        output = subprocess.check_output(['schtasks', '/query', '/fo', 'LIST'], stderr=subprocess.DEVNULL).decode(errors='ignore')
-        tasks = [line.split(':', 1)[1].strip() for line in output.split('\n') if line.startswith('TaskName:')]
+        output = subprocess.check_output(['schtasks', '/query', '/fo', 'LIST', '/v'], stderr=subprocess.DEVNULL).decode(errors='ignore')
+        tasks = {}
+        current_task = None
+        task_data = {}
+        
+        for line in output.split('\n'):
+            line = line.strip()
+            if not line:
+                if current_task and task_data:
+                    # Filter out Microsoft default tasks
+                    if not current_task.startswith('\\Microsoft\\Windows\\'):
+                        tasks[current_task] = task_data
+                    current_task = None
+                    task_data = {}
+                continue
+            
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                if key == 'TaskName':
+                    current_task = value
+                elif key == 'Next Run Time':
+                    task_data['next_run'] = value
+                elif key == 'Status':
+                    task_data['status'] = value
+                elif key == 'Author':
+                    task_data['author'] = value
+                elif key == 'Task To Run':
+                    task_data['command'] = value
+        
         return tasks
     except:
-        return []
+        return {}
 
 # ============================================================================
 # 3. Windows Services
@@ -72,10 +148,15 @@ def check_scheduled_tasks():
 def check_services():
     try:
         output = subprocess.check_output(['sc', 'query', 'type=', 'service'], stderr=subprocess.DEVNULL).decode(errors='ignore')
-        services = [line.split(':', 1)[1].strip() for line in output.split('\n') if line.startswith('SERVICE_NAME:')]
+        services = {}
+        for line in output.split('\n'):
+            if line.startswith('SERVICE_NAME:'):
+                name = line.split(':', 1)[1].strip()
+                is_suspicious = name not in LEGITIMATE_SERVICES and not name.endswith('_1016dd')
+                services[name] = {'is_suspicious': is_suspicious}
         return services
     except:
-        return []
+        return {}
 
 # ============================================================================
 # 4. Winlogon Helper DLL
@@ -194,7 +275,8 @@ def check_ifeo():
         while True:
             try:
                 subkey_name = reg.EnumKey(key, i)
-                results[f"HKLM\\{path}\\{subkey_name}"] = "Present"
+                is_suspicious = subkey_name not in LEGITIMATE_IFEO
+                results[f"HKLM\\{path}\\{subkey_name}"] = {'is_suspicious': is_suspicious}
                 i += 1
             except OSError:
                 break
@@ -217,7 +299,11 @@ def check_netsh_helpers():
         while True:
             try:
                 name, value, _ = reg.EnumValue(key, i)
-                results[f"HKLM\\{path}\\{name}"] = value
+                is_suspicious = value not in LEGITIMATE_NETSH
+                results[f"HKLM\\{path}\\{name}"] = {
+                    'value': value,
+                    'is_suspicious': is_suspicious
+                }
                 i += 1
             except OSError:
                 break
@@ -240,7 +326,8 @@ def check_port_monitors():
         while True:
             try:
                 subkey_name = reg.EnumKey(key, i)
-                results[f"HKLM\\{path}\\{subkey_name}"] = "Present"
+                is_suspicious = subkey_name not in LEGITIMATE_MONITORS
+                results[f"HKLM\\{path}\\{subkey_name}"] = {'is_suspicious': is_suspicious}
                 i += 1
             except OSError:
                 break
