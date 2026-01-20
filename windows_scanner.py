@@ -50,6 +50,19 @@ LEGITIMATE_MONITORS = {
     'USB Monitor', 'WSD Port'
 }
 
+# Helper function to get registry key timestamp
+def get_reg_key_timestamp(hive, path):
+    """Get last modified time of registry key"""
+    try:
+        from datetime import datetime
+        key = reg.OpenKey(hive, path)
+        _, _, last_modified = reg.QueryInfoKey(key)
+        reg.CloseKey(key)
+        timestamp = datetime.fromtimestamp(last_modified / 10000000 - 11644473600)
+        return timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    except:
+        return 'N/A'
+
 # ============================================================================
 # 1. Registry Run Keys/Startup Folder
 # ============================================================================
@@ -398,7 +411,11 @@ def check_active_setup():
                 while True:
                     try:
                         subkey_name = reg.EnumKey(key, i)
-                        results[f"{hive_name}\\{path}\\{subkey_name}"] = "Present"
+                        subkey_path = f"{path}\\{subkey_name}"
+                        modified = get_reg_key_timestamp(hive, subkey_path)
+                        results[f"{hive_name}\\{path}\\{subkey_name}"] = {
+                            'modified': modified
+                        }
                         i += 1
                     except OSError:
                         break
@@ -491,11 +508,14 @@ def check_startup_approved():
         for path in paths:
             try:
                 key = reg.OpenKey(hive, path)
+                modified = get_reg_key_timestamp(hive, path)
                 i = 0
                 while True:
                     try:
                         name, value, _ = reg.EnumValue(key, i)
-                        results[f"{hive_name}\\{path}\\{name}"] = "Present"
+                        results[f"{hive_name}\\{path}\\{name}"] = {
+                            'modified': modified
+                        }
                         i += 1
                     except OSError:
                         break
