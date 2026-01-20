@@ -88,7 +88,7 @@ def generate_html(scan_files):
         selected = 'selected' if i == 0 else ''
         html += f'                    <option value="{scan_file}" {selected}>{basename}</option>\n'
     
-    html += "    </script>\n"
+    html += """
                 </select>
             </div>
             <div>
@@ -132,7 +132,7 @@ def generate_html(scan_files):
             print(f"Warning: Could not load {scan_file}: {e}")
     
     html += "    <script>\n"
-    
+    html += """
     function showDetails(key, value) {
         document.getElementById('modalTitle').textContent = key;
         let html = '';

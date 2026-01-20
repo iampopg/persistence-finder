@@ -14,19 +14,20 @@ LEGITIMATE_RUN_KEYS = {
 }
 
 LEGITIMATE_SERVICES = {
-    'AnyDesk', 'AppXSvc', 'AudioEndpointBuilder', 'Audiosrv', 'BFE', 'BrokerInfrastructure',
-    'camsvc', 'CDPSvc', 'CoreMessagingRegistrar', 'CryptSvc', 'DcomLaunch', 'DevQueryBroker',
-    'Dhcp', 'DiagTrack', 'DispBrokerDesktopSvc', 'Dnscache', 'DoSvc', 'DPS', 'DusmSvc',
-    'EventLog', 'EventSystem', 'FontCache', 'gpsvc', 'IKEEXT', 'InstallService', 'iphlpsvc',
-    'KeyIso', 'LanmanServer', 'LanmanWorkstation', 'lfsvc', 'LicenseManager', 'lmhosts',
-    'LSM', 'MDCoreSvc', 'mpssvc', 'NcbService', 'netprofm', 'NgcSvc', 'NlaSvc', 'nsi',
-    'PlugPlay', 'PolicyAgent', 'Power', 'ProfSvc', 'RasMan', 'RmSvc', 'RpcEptMapper', 'RpcSs',
-    'SamSs', 'Schedule', 'SecurityHealthService', 'SENS', 'ShellHWDetection', 'Spooler',
-    'SstpSvc', 'StateRepository', 'StorSvc', 'SysMain', 'SystemEventsBroker', 'TabletInputService',
+    'AnyDesk', 'Appinfo', 'AppXSvc', 'AudioEndpointBuilder', 'Audiosrv', 'BFE', 'BITS',
+    'BrokerInfrastructure', 'camsvc', 'CDPSvc', 'CoreMessagingRegistrar', 'CryptSvc',
+    'DcomLaunch', 'DevQueryBroker', 'Dhcp', 'DiagTrack', 'DispBrokerDesktopSvc', 'Dnscache',
+    'DoSvc', 'DPS', 'DusmSvc', 'EventLog', 'EventSystem', 'FontCache', 'gpsvc', 'IKEEXT',
+    'InstallService', 'iphlpsvc', 'KeyIso', 'LanmanServer', 'LanmanWorkstation', 'lfsvc',
+    'LicenseManager', 'lmhosts', 'LSM', 'MDCoreSvc', 'mpssvc', 'NcbService', 'netprofm',
+    'NgcCtnrSvc', 'NgcSvc', 'NlaSvc', 'nsi', 'PcaSvc', 'PlugPlay', 'PolicyAgent', 'Power',
+    'ProfSvc', 'RasMan', 'RmSvc', 'RpcEptMapper', 'RpcSs', 'SamSs', 'Schedule', 'seclogon',
+    'SecurityHealthService', 'SENS', 'ShellHWDetection', 'Spooler', 'SSDPSRV', 'SstpSvc',
+    'StateRepository', 'StorSvc', 'SysMain', 'SystemEventsBroker', 'TabletInputService',
     'Themes', 'TimeBrokerSvc', 'TokenBroker', 'TrkWks', 'UltraViewService', 'UserManager',
     'UsoSvc', 'VaultSvc', 'VBoxService', 'WaaSMedicSvc', 'Wcmsvc', 'WdiServiceHost',
-    'WinDefend', 'WinHttpAutoProxySvc', 'Winmgmt', 'wlidsvc', 'WpnService', 'wscsvc',
-    'WSearch', 'wuauserv', 'SSDPSRV', 'WdiSystemHost'
+    'WdiSystemHost', 'WinDefend', 'WinHttpAutoProxySvc', 'Winmgmt', 'wlidsvc', 'wmiApSrv',
+    'WpnService', 'wscsvc', 'WSearch', 'wuauserv'
 }
 
 LEGITIMATE_IFEO = {
