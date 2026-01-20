@@ -10,12 +10,17 @@ except ImportError:
 # Known legitimate entries
 LEGITIMATE_RUN_KEYS = {
     'SecurityHealth', 'VBoxTray', 'VMware User Process', 'VMware VM3DService Process',
-    'OneDrive', 'OneDriveSetup', 'MicrosoftEdgeAutoLaunch'
+    'OneDrive', 'OneDriveSetup', 'MicrosoftEdgeAutoLaunch', 'SecurityHealth', 'ctfmon'
+}
+
+# Legitimate startup approved entries (these can be disabled by user)
+LEGITIMATE_STARTUP_APPROVED = {
+    'MicrosoftEdgeAutoLaunch', 'OneDrive', 'OneDriveSetup'
 }
 
 LEGITIMATE_SERVICES = {
     'AnyDesk', 'Appinfo', 'AppXSvc', 'AudioEndpointBuilder', 'Audiosrv', 'BFE', 'BITS',
-    'BrokerInfrastructure', 'camsvc', 'CDPSvc', 'CoreMessagingRegistrar', 'CryptSvc',
+    'BrokerInfrastructure', 'camsvc', 'CDPSvc', 'ClipSVC', 'CoreMessagingRegistrar', 'CryptSvc',
     'DcomLaunch', 'DevQueryBroker', 'Dhcp', 'DiagTrack', 'DispBrokerDesktopSvc', 'Dnscache',
     'DoSvc', 'DPS', 'DusmSvc', 'EventLog', 'EventSystem', 'FontCache', 'gpsvc', 'IKEEXT',
     'InstallService', 'iphlpsvc', 'KeyIso', 'LanmanServer', 'LanmanWorkstation', 'lfsvc',
@@ -627,12 +632,13 @@ def check_startup_approved():
                             status_byte = value[0]
                             status = 'Enabled' if status_byte == 0x02 else 'Disabled' if status_byte == 0x03 else 'Unknown'
                             
-                            # Flag if security tool is disabled
+                            # Only flag if security tool is disabled
                             if status == 'Disabled' and any(tool in name for tool in SECURITY_TOOLS):
                                 is_suspicious = True
-                            # Flag if unknown program is enabled
-                            elif status == 'Enabled' and name not in LEGITIMATE_RUN_KEYS:
-                                is_suspicious = True
+                            # Don't flag legitimate startup items
+                            elif status == 'Enabled' and name not in LEGITIMATE_RUN_KEYS and name not in LEGITIMATE_STARTUP_APPROVED:
+                                # Only suspicious if it's truly unknown
+                                is_suspicious = not any(legit in name for legit in ['Microsoft', 'Windows', 'OneDrive', 'Edge'])
                         
                         results[f"{hive_name}\\{path}\\{name}"] = {
                             'modified': modified,
