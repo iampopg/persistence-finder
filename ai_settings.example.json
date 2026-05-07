@@ -1,0 +1,7 @@
+{
+  "provider": "ollama",
+  "endpoint": "http://localhost:11434",
+  "model": "",
+  "groq_api_key": "",
+  "groq_model": "meta-llama/llama-4-scout-17b-16e-instruct"
+}

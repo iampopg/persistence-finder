@@ -1,0 +1,31 @@
+# ── AI Settings (contains API keys — never commit) ──
+ai_settings.json
+
+# ── Scan results (local data only) ──
+scans/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ──
+venv/
+.venv/
+env/
+.env/
+
+# ── macOS ──
+.DS_Store
+.AppleDouble
+*.swp
+
+# ── IDE ──
+.vscode/
+.idea/
+*.iml

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Persistence Finder</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>🔍 Persistence Finder</h1>
+      <span>macOS · Security Scanner</span>
+    </div>
+
+    <div class="sidebar-section">
+      <label>Actions</label>
+      <button class="sidebar-btn" id="run-scan-btn" onclick="runScan()">▶ Run New Scan</button>
+    </div>
+
+    <div class="sidebar-section">
+      <label>Scan History</label>
+      <ul class="scan-list" id="scan-list">
+        <li style="color:var(--muted);font-size:0.8rem;padding:8px 12px">Loading…</li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <h2 id="scan-title">Persistence Finder</h2>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary" onclick="runScan()" id="topbar-scan-btn">▶ New Scan</button>
+        <span class="platform-badge" id="platform-badge">—</span>
+        <button class="btn-report" id="report-btn" onclick="downloadReport()" style="display:none">📄 View Report</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card danger">
+        <div class="label">Suspicious</div>
+        <div class="value" id="stat-suspicious">—</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="label">Total Findings</div>
+        <div class="value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Categories</div>
+        <div class="value" id="stat-categories">—</div>
+      </div>
+      <div class="stat-card success">
+        <div class="label">Platform</div>
+        <div class="value" style="font-size:1.2rem;margin-top:8px" id="stat-platform">—</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-findings">Findings</button>
+      <button class="tab-btn" data-tab="tab-ai">🤖 AI Analysis</button>
+      <button class="tab-btn" data-tab="tab-raw">Raw JSON</button>
+      <button class="tab-btn" data-tab="tab-help">❓ Help</button>
+      <button class="tab-btn" data-tab="tab-settings">⚙ Settings</button>
+    </div>
+
+    <!-- ── Tab: Findings ── -->
+    <div class="tab-panel active" id="tab-findings">
+      <!-- Hero shown when no scan loaded -->
+      <div id="scan-hero" class="scan-hero">
+        <div class="scan-hero-icon">🛡️</div>
+        <h2>Scan Your Mac for Persistence</h2>
+        <p>Detect LaunchAgents, LaunchDaemons, Login Items, Cron Jobs,<br>Kernel Extensions, Shell Profiles and 16 more techniques.</p>
+        <button class="btn-scan-hero" id="hero-scan-btn" onclick="runScan()">▶ Start Scan</button>
+      </div>
+
+      <!-- Findings shown after scan -->
+      <div id="findings-wrap" style="display:none">
+        <div class="findings-header">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="color:var(--muted);font-size:0.85rem">Click a category to expand</span>
+            <label id="ai-filter-label" style="display:none;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;color:var(--accent)">
+              <input type="checkbox" id="ai-filter-toggle" onchange="applyAiFilter()" style="accent-color:var(--accent)">
+              🤖 Hide AI false positives
+            </label>
+          </div>
+          <input class="search-box" id="search" type="text" placeholder="🔎  Search findings…">
+        </div>
+        <div id="findings-container"></div>
+      </div>
+    </div>
+
+    <!-- ── Tab: AI Analysis ── -->
+    <div class="tab-panel" id="tab-ai">
+
+      <!-- Action bar: just buttons, no settings (settings are in Settings tab) -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="ai-btn" onclick="runAI()">⚡ Analyze Scan with AI</button>
+        <button class="btn btn-secondary" onclick="clearAI()">✕ Clear</button>
+        <span id="ai-status-badge" style="font-size:0.8rem;color:var(--muted)"></span>
+        <a href="#" onclick="switchToSettings()" style="font-size:0.78rem;color:var(--accent);margin-left:auto">⚙ AI Settings</a>
+      </div>
+
+      <!-- Live log of AI analysis -->
+      <div id="ai-live-log" style="display:none;background:#010409;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-family:monospace;font-size:0.75rem;line-height:1.6;max-height:260px;overflow-y:auto;margin-bottom:16px;white-space:pre-wrap"></div>
+
+      <!-- Streaming status (shown while waiting) -->
+      <div class="ai-stream-box" id="ai-stream-box">
+        Click <strong>⚡ Analyze Scan with AI</strong> to triage all findings.<br>
+        AI settings are configured in the <a href="#" onclick="switchToSettings()" style="color:var(--accent)">⚙ Settings</a> tab.
+      </div>
+
+      <!-- Threat cards grid -->
+      <div id="threat-grid" class="threat-grid"></div>
+
+    </div>
+
+    <!-- ── Tab: Raw JSON ── -->
+    <div class="tab-panel" id="tab-raw">
+      <div class="report-bar">
+        <span id="raw-label">Select a scan to view data</span>
+        <button class="btn btn-secondary" onclick="downloadJson()">⬇ JSON</button>
+      </div>
+      <pre class="json-block" id="raw-json">Select a scan to view raw data.</pre>
+    </div>
+
+    <!-- ── Tab: Help ── -->
+    <div class="tab-panel" id="tab-help">
+      <div style="max-width:800px">
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px">
+          <h3 style="color:var(--accent);margin-bottom:12px">🔍 How It Works</h3>
+          <p style="color:var(--muted);font-size:0.88rem;line-height:1.7">
+            Persistence Finder scans your Mac for all known persistence mechanisms — places where software
+            (or malware) can survive a reboot. It runs entirely locally, makes no network requests, and
+            never modifies anything. Click <strong style="color:var(--text)">▶ New Scan</strong> to start.
+            Results are saved to the <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">scans/</code> folder and appear in the sidebar.
+          </p>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px">
+          <h3 style="color:var(--accent);margin-bottom:16px">🛡️ What Gets Scanned (22 Techniques)</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.82rem">
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>1. LaunchAgents</strong><br><span style="color:var(--muted)">~/Library/LaunchAgents, /Library/LaunchAgents, /System/Library/LaunchAgents — programs that run at login</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>2. LaunchDaemons</strong><br><span style="color:var(--muted)">/Library/LaunchDaemons, /System/Library/LaunchDaemons — system-wide background services</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>3. Login Items</strong><br><span style="color:var(--muted)">Apps set to open at login via System Settings</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>4. Cron Jobs</strong><br><span style="color:var(--muted)">Scheduled tasks via crontab and /etc/cron*</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>5. Shell Profiles</strong><br><span style="color:var(--muted)">.zshrc, .bash_profile, /etc/profile — commands run on every shell open</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>6. Startup Items (Legacy)</strong><br><span style="color:var(--muted)">/Library/StartupItems — old-style boot scripts</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>7. Kernel Extensions</strong><br><span style="color:var(--muted)">.kext files — kernel-level drivers, highest privilege</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>8. System Extensions</strong><br><span style="color:var(--muted)">Modern DriverKit extensions via systemextensionsctl</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>9. SSH Authorized Keys</strong><br><span style="color:var(--muted)">~/.ssh/authorized_keys — backdoor remote access keys</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>10. At Jobs</strong><br><span style="color:var(--muted)">One-time scheduled tasks via atd</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>11. Periodic Scripts</strong><br><span style="color:var(--muted)">/etc/periodic/daily|weekly|monthly — maintenance scripts</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>12. Config Profiles (MDM)</strong><br><span style="color:var(--muted)">Mobile device management profiles that can enforce settings</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>13. Emond Rules</strong><br><span style="color:var(--muted)">/etc/emond.d — event monitor daemon, rarely used legitimately</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>14. XPC Services</strong><br><span style="color:var(--muted)">~/Library/XPCServices — inter-process communication services</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>15. Login/Logout Hooks</strong><br><span style="color:var(--muted)">com.apple.loginwindow LoginHook/LogoutHook — legacy scripts</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>16. Dylib Hijacking</strong><br><span style="color:var(--muted)">DYLD_INSERT_LIBRARIES and .dylib files in app bundles</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>17. Dock Items</strong><br><span style="color:var(--muted)">com.apple.dock.plist — persistent apps in the Dock</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>18. Spotlight Importers</strong><br><span style="color:var(--muted)">.mdimporter bundles that run during indexing</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>19. Browser Extensions</strong><br><span style="color:var(--muted)">Chrome, Safari, Firefox extensions</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>20. Sudoers</strong><br><span style="color:var(--muted)">/etc/sudoers — privilege escalation rules</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>21. Unsigned Apps</strong><br><span style="color:var(--muted)">Applications not signed by Apple or a known developer</span></div>
+            <div style="padding:10px;background:var(--surface2);border-radius:6px"><strong>22. Quarantine DB</strong><br><span style="color:var(--muted)">Recently downloaded files from the internet</span></div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px">
+          <h3 style="color:var(--accent);margin-bottom:12px">🤖 AI Analysis — False Positive Reduction</h3>
+          <p style="color:var(--muted);font-size:0.88rem;line-height:1.7;margin-bottom:10px">
+            The scanner flags thousands of items as <em>suspicious</em> — most are legitimate Apple system files.
+            The AI Analysis tab sends all suspicious items to your local AI model (via Ollama) in batches of 50.
+            The AI identifies which ones are <strong style="color:var(--danger)">actually malicious</strong> vs false positives.
+          </p>
+          <ol style="color:var(--muted);font-size:0.88rem;line-height:2;padding-left:20px">
+            <li>Install <a href="https://ollama.ai" target="_blank" style="color:var(--accent)">Ollama</a> and pull a model: <code style="background:var(--surface2);padding:1px 6px;border-radius:3px;color:var(--accent2)">ollama pull deepseek-r1</code></li>
+            <li>Go to <strong style="color:var(--text)">🤖 AI Analysis</strong> tab, enter your Ollama URL, click <strong style="color:var(--text)">Detect</strong></li>
+            <li>Select a model and click <strong style="color:var(--text)">⚡ Analyze</strong> — all batches run automatically</li>
+            <li>Real threats appear as cards. Click <strong style="color:var(--text)">🔬 Investigate</strong> to auto-run a read-only command</li>
+            <li>Back in <strong style="color:var(--text)">Findings</strong>, check <strong style="color:var(--text)">🤖 Hide AI false positives</strong> to see only real threats</li>
+          </ol>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px">
+          <h3 style="color:var(--accent);margin-bottom:12px">⚠️ Important Notes</h3>
+          <ul style="color:var(--muted);font-size:0.88rem;line-height:2;padding-left:20px">
+            <li>This tool is <strong style="color:var(--text)">read-only</strong> — it never modifies, deletes, or executes anything</li>
+            <li>Run with <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">sudo</code> for complete access to all system files</li>
+            <li>Not all suspicious items are malicious — always verify before taking action</li>
+            <li>The Investigate feature only runs safe commands: file, stat, ls, cat, codesign, spctl, etc.</li>
+            <li>AI analysis runs entirely on your local machine — no data leaves your system</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ── Tab: Settings ── -->
+    <div class="tab-panel" id="tab-settings">
+      <div style="max-width:680px">
+
+        <!-- AI Provider -->
+        <div class="settings-card">
+          <div class="settings-card-title">🤖 AI Provider</div>
+
+          <div class="settings-row">
+            <label class="settings-label">Provider</label>
+            <select id="s-provider" onchange="onProviderChange()" class="settings-input" style="max-width:200px">
+              <option value="ollama">Ollama (local)</option>
+              <option value="groq">Groq (cloud free)</option>
+            </select>
+          </div>
+
+          <!-- Ollama -->
+          <div id="s-ollama-section">
+            <div class="settings-row">
+              <label class="settings-label">Ollama URL</label>
+              <input id="s-endpoint" type="text" class="settings-input" value="http://localhost:11434" placeholder="http://localhost:11434">
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">Model</label>
+              <div style="display:flex;gap:8px;flex:1">
+                <select id="s-model" class="settings-input">
+                  <option value="">— click Detect —</option>
+                </select>
+                <button class="btn btn-secondary" onclick="settingsDetect()">⟳ Detect</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Groq -->
+          <div id="s-groq-section" style="display:none">
+            <div class="settings-row">
+              <label class="settings-label">API Key</label>
+              <input id="s-groq-key" type="password" class="settings-input" placeholder="gsk_...">
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">Model</label>
+              <select id="s-groq-model" class="settings-input">
+                <option value="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout-17b — 30K TPM, 500K TPD ★ Best</option>
+                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile — 12K TPM, 100K TPD</option>
+                <option value="qwen/qwen3-32b">qwen3-32b — 6K TPM, 500K TPD</option>
+                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant — 6K TPM, fast</option>
+              </select>
+            </div>
+            <div style="padding:10px 0 0 160px;font-size:0.78rem;color:var(--muted)">
+              Get a free API key at <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a>
+            </div>
+          </div>
+
+          <div class="settings-row" style="margin-top:16px">
+            <label class="settings-label"></label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <button class="btn btn-primary" onclick="saveSettingsPage()">💾 Save Settings</button>
+              <button class="btn btn-secondary" onclick="testAiConnection()">🔌 Test Connection</button>
+              <span id="s-test-result" style="font-size:0.82rem"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scan settings -->
+        <div class="settings-card">
+          <div class="settings-card-title">🔍 Scan Behaviour</div>
+          <div class="settings-row">
+            <label class="settings-label">AI during scan</label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
+              <input type="checkbox" id="s-ai-scan" checked style="accent-color:var(--accent)">
+              Use AI to triage findings during scan (recommended)
+            </label>
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">Scan on startup</label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
+              <input type="checkbox" id="s-auto-scan" style="accent-color:var(--accent)">
+              Auto-run scan when app opens
+            </label>
+          </div>
+          <div class="settings-row" style="margin-top:16px">
+            <label class="settings-label"></label>
+            <button class="btn btn-primary" onclick="saveSettingsPage()">💾 Save Settings</button>
+          </div>
+        </div>
+
+        <!-- Current saved settings display -->
+        <div class="settings-card">
+          <div class="settings-card-title">📄 Current Saved Config</div>
+          <pre id="s-current-config" style="font-family:monospace;font-size:0.75rem;color:var(--muted);background:var(--surface2);padding:12px;border-radius:6px;overflow-x:auto">Loading…</pre>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Scan status widget (corner, non-blocking) ── -->
+<div class="scan-overlay" id="scan-overlay">
+  <div class="scan-overlay-box">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="scan-radar">
+        <div class="scan-radar-ring"></div>
+        <div class="scan-radar-ring"></div>
+        <div class="scan-radar-ring"></div>
+        <div class="scan-radar-sweep"></div>
+        <div class="scan-radar-dot"></div>
+      </div>
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--accent)">Scanning…</div>
+        <div class="scan-sub" id="scan-step-label" style="margin-bottom:0">Initializing…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Investigate modal ── -->
+<div class="modal-backdrop" id="investigate-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">🔬 AI Investigation</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="modal-cancel-btn" class="btn btn-danger" onclick="cancelInvestigation()" style="display:none;font-size:0.75rem;padding:5px 12px">⏹ Stop</button>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-cmd" id="modal-path"></div>
+      <div class="modal-cmd-btns" id="modal-cmd-btns"></div>
+      <div class="modal-output" id="modal-output">Select a command above to run it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

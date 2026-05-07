@@ -1,7 +1,7 @@
 import os
 import subprocess
 import logging
-from forensic_helpers import get_file_metadata, get_registry_metadata
+from core.forensic_helpers import get_file_metadata, get_registry_metadata
 
 try:
     import winreg as reg
