@@ -1,417 +1,190 @@
 # Persistence Finder
 
-A powerful cross-platform tool to detect persistence mechanisms on Windows and Linux systems with beautiful terminal output and interactive web interface.
+A macOS-first (also Linux & Windows) persistence mechanism scanner with a beautiful web UI, AI-powered triage, and automated investigation.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)](https://github.com/iampopg/persistence-finder)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](https://github.com/iampopg/persistence-finder)
 
 > **Created by [@iampopg](https://github.com/iampopg)**
 
-![Persistence Finder Web Interface](persistence-finder.jpg)
+![Persistence Finder Web UI](Scan.png)
 
 ---
 
-## ⚠️ DISCLAIMER
+## ⚠️ Disclaimer
 
-**THIS TOOL IS FOR AUTHORIZED SECURITY ASSESSMENTS ONLY**
-
-- Only use on systems you own or have explicit written permission to scan
-- Unauthorized scanning of systems may be illegal in your jurisdiction
-- The authors assume NO liability for misuse or damage caused by this tool
-- This tool is provided "AS IS" without warranty of any kind
-- Use at your own risk
+**For authorized security assessments only.** Only use on systems you own or have explicit written permission to scan. The authors assume no liability for misuse.
 
 ---
 
-## ✨ Features
+## ✨ What It Does
 
-### 🎯 Detection Capabilities
-
-- **✅ 15 Linux Persistence Techniques** (Production Ready)
-- **✅ 20 Windows Techniques** (Production Ready)
-- **🚧 6 macOS Techniques** (Coming Soon)
-
-### 🔬 Forensic Analysis Features
-
-- **File Hashing** - MD5/SHA256 for IOC tracking
-- **Digital Signatures** - Verify Microsoft-signed binaries
-- **Timestamps** - Created/Modified/Accessed dates
-- **Registry Metadata** - Last modified timestamps
-- **File Metadata** - Size, permissions, full paths
-
-### 🎨 Beautiful Output
-
-- Color-coded terminal display with ASCII art banner
-- Human-readable timestamps (YYYY-MM-DD HH:MM:SS)
-- Red highlighting for suspicious items
-- Organized categorized results
-- Progress indicators
-
-### 💾 Automatic Saving
-
-- Auto-save all scans to JSON format
-- Organized in `scans/` directory
-- Full forensic metadata included
-- Easy to parse for automation
-- Timesketch/TheHive export support
-
-### 🌐 Interactive Web Viewer
-
-- Beautiful HTML dashboard
-- Click items to view full details
-- Date filtering capabilities
-- Collapsible categories
-- Export to JSON
-
----
-
-## 🎯 Use Cases
-
-### 🚨 Incident Response
-- Quickly identify persistence mechanisms during active incidents
-- Export findings to SIEM/TheHive for case management
-- Timeline analysis with Timesketch integration
-
-### 🔍 Threat Hunting
-- Proactive hunting for APT persistence
-- Baseline comparison to detect anomalies
-- Hash-based IOC tracking
-
-### 🧪 Malware Analysis
-- Identify malware persistence techniques
-- Digital signature verification
-- Forensic metadata collection
-
-### 🛡️ Security Auditing
-- Regular security assessments
-- Compliance checking
-- Vulnerability identification
-
----
-
-## 📋 Detection Coverage
-
-### Linux (15 Techniques)
-
-1. ✅ Cron Jobs (system & user)
-2. ✅ Systemd Services & Timers
-3. ✅ RC Scripts & Init.d
-4. ✅ Shell Profile Files (with suspicious command detection)
-5. ✅ SSH Authorized Keys
-6. ✅ Kernel Modules (LKM)
-7. ✅ eBPF Programs
-8. ✅ LD_PRELOAD Hijacking
-9. ✅ Udev Rules
-10. ✅ PAM Modules
-11. ✅ At Jobs
-12. ✅ XDG Autostart
-13. ✅ MOTD Scripts
-14. ✅ Systemd Unit Files
-15. ✅ Profile.d Scripts
-
-### Windows (20 Techniques)
-
-1. ✅ Registry Run Keys (6 locations)
-2. ✅ Startup Folders
-3. ✅ Scheduled Tasks
-4. ✅ Windows Services
-5. ✅ Winlogon Helper DLL
-6. ✅ Accessibility Features
-7. ✅ AppInit/AppCert DLLs
-8. ✅ WMI Event Subscriptions
-9. ✅ LSASS/SSP
-10. ✅ IFEO Injection
-11. ✅ Netsh Helper DLL
-12. ✅ Port Monitors
-13. ✅ Authentication Packages
-14. ✅ Time Providers
-15. ✅ Active Setup
-16. ✅ COR_PROFILER
-17. ✅ SilentProcessExit
-18. ✅ BITS Jobs
-19. ✅ Startup Approved
-20. ✅ Boot Execute
+- **Scans** your system for all known persistence mechanisms (22 on macOS, 15 on Linux, 20 on Windows)
+- **AI triage during scan** — sends each category to your local or cloud AI to filter out false positives in real time
+- **Web UI** — full browser-based interface, no CLI needed
+- **AI Analysis tab** — post-scan deep analysis, identifies real threats vs false positives
+- **AI Investigation** — click Investigate on any threat, AI runs read-only commands autonomously and gives a verdict (Malicious / Suspicious / Clean)
+- **Report** — view a full HTML report in a new tab with all findings and AI-identified threats
 
 ---
 
 ## 🚀 Quick Start
 
-### Installation
-
 ```bash
-# Clone the repository
 git clone https://github.com/iampopg/persistence-finder.git
 cd persistence-finder
 
-# Install dependencies
 pip install -r requirements.txt
+
+# Copy the settings template
+cp ai_settings.example.json ai_settings.json
+
+# Start the web UI
+python3 web/app.py
 ```
 
-### Basic Usage
+Open **http://localhost:5001** in your browser.
 
-**Linux:**
+---
 
+## 🤖 AI Setup
+
+Configure AI in the **⚙ Settings** tab of the web UI. Two providers supported:
+
+### Ollama (local, free, private)
 ```bash
-# Run with sudo for complete access
-sudo python3 main.py
+# Install Ollama: https://ollama.ai
+ollama pull deepseek-r1
 ```
+Set URL to `http://localhost:11434`, click Detect, select model, Save.
 
-**Windows:**
+### Groq (cloud, free tier)
+Get a free API key at [console.groq.com](https://console.groq.com).  
+Best free model: **llama-4-scout-17b** (30K TPM, 500K TPD).
 
-```cmd
-# Run as Administrator
-python main.py
+---
+
+## 🛡️ Detection Coverage
+
+### macOS — 22 Techniques
+| # | Technique | Risk |
+|---|-----------|------|
+| 1 | LaunchAgents (user + system) | High |
+| 2 | LaunchDaemons | High |
+| 3 | Login Items (BTM database) | Medium |
+| 4 | Cron Jobs | High |
+| 5 | Shell Profile Files (.zshrc, .bashrc…) | High |
+| 6 | Startup Items (legacy) | Medium |
+| 7 | Kernel Extensions (.kext) | Critical |
+| 8 | System Extensions (DriverKit) | High |
+| 9 | SSH Authorized Keys | Critical |
+| 10 | At Jobs | Low |
+| 11 | Periodic Scripts (daily/weekly/monthly) | Medium |
+| 12 | Config Profiles (MDM) | High |
+| 13 | Emond Rules | High |
+| 14 | XPC Services | Medium |
+| 15 | Login/Logout Hooks (legacy) | High |
+| 16 | Dylib Hijacking (DYLD_INSERT_LIBRARIES) | Critical |
+| 17 | Dock Items | Low |
+| 18 | Spotlight Importers (.mdimporter) | Medium |
+| 19 | Browser Extensions (Chrome/Safari/Firefox) | Medium |
+| 20 | Sudoers | High |
+| 21 | Unsigned Applications | Medium |
+| 22 | Quarantine Database | Low |
+
+### Linux — 15 Techniques
+Cron Jobs, Systemd Services/Timers, RC Scripts, Shell Profiles, SSH Keys, Kernel Modules (LKM), eBPF, LD_PRELOAD, Udev Rules, PAM Modules, At Jobs, XDG Autostart, MOTD Scripts, Systemd Unit Files, Profile.d Scripts
+
+### Windows — 20 Techniques
+Registry Run Keys, Startup Folders, Scheduled Tasks, Services, Winlogon DLL, Accessibility Features, AppInit DLLs, WMI Subscriptions, LSASS/SSP, IFEO, Netsh Helpers, Port Monitors, Auth Packages, Time Providers, Active Setup, COR_PROFILER, SilentProcessExit, BITS Jobs, Startup Approved, Boot Execute
+
+---
+
+## 🌐 Web UI Features
+
+| Tab | What it does |
+|-----|-------------|
+| **Findings** | All scan results, collapsible by category, search, 🔬 Investigate button on each item |
+| **🤖 AI Analysis** | Sends all findings to AI, renders threat cards with severity + why + MITRE technique |
+| **Raw JSON** | Full scan data, download as JSON |
+| **❓ Help** | How it works, technique descriptions, AI setup guide |
+| **⚙ Settings** | AI provider (Ollama/Groq), API key, model selection, test connection |
+
+---
+
+## 🔬 AI Investigation
+
+Click **🔬 Investigate** on any threat card. The AI:
+1. Decides which read-only command to run (e.g. `codesign -dvvv /path`, `sudo cat /etc/sudoers`)
+2. We run it — only safe commands allowed (no modifications, no network)
+3. AI reads the output and decides: next command, or final verdict
+4. Up to 6 rounds, streamed live in the modal
+5. Final verdict: 🚨 **MALICIOUS** / ⚠ **SUSPICIOUS** / ✅ **CLEAN**
+
+Click **⏹ Stop** to cancel at any time.
+
+---
+
+## 📁 Project Structure
+
 ```
-
-### View Results in Browser
-
-```bash
-python3 html_viewer.py
+persistence-finder/
+├── core/                    # Shared helpers (system_info, utils, forensic_helpers)
+├── docs/                    # Documentation + README
+├── scanners/
+│   ├── macos_scanner.py     # 22 macOS persistence techniques
+│   ├── linux_scanner.py     # 15 Linux techniques
+│   └── windows_scanner.py   # 20 Windows techniques
+├── web/
+│   ├── app.py               # Flask backend (scan, AI, investigate, report)
+│   ├── static/
+│   │   ├── style.css        # Dark cybersecurity theme
+│   │   └── app.js           # Frontend logic
+│   └── templates/
+│       └── index.html       # Single-page app
+├── scans/                   # Scan results (gitignored)
+├── ai_settings.json         # Your AI config (gitignored — contains API key)
+├── ai_settings.example.json # Empty template (safe to commit)
+├── main.py                  # CLI entry point
+└── requirements.txt
 ```
 
 ---
 
-## 📖 Usage Examples
+## 🔒 Security Notes
 
-### Command Line Options
-
-```bash
-# JSON output only
-python3 main.py --json
-
-# Verbose mode (show full file contents)
-sudo python3 main.py --verbose
-
-# Summary mode (counts only)
-sudo python3 main.py --summary
-
-# Skip web viewer prompt
-sudo python3 main.py --no-web
-
-# Don't save results
-python3 main.py --no-save
-```
-
-### Example Output
-
-```
-    ____  __________  _____ ______________________   ______________
-   / __ \/ ____/ __ \/ ___//  _/ ___/_  __/ ____/ | / / ____/ ____/
-  / /_/ / __/ / /_/ /\__ \ / / \__ \ / / / __/ /  |/ / /   / __/   
- / ____/ /___/ _, _/___/ // / ___/ // / / /___/ /|  / /___/ /___   
-/_/   /_____/_/ |_|/____/___//____//_/ /_____/_/ |_/\____/_____/   
-
-======================================================================
-  SYSTEM INFORMATION
-======================================================================
-  Platform: Linux 6.17.10+kali-amd64
-  Architecture: x86_64
-  Privileges: ✓ Admin/Root
-  Distribution: Kali GNU/Linux
-
-[+] 6. Shell Profile Files
-----------------------------------------------------------------------
-  • /home/user/.bashrc:
-    ⚠️  SUSPICIOUS COMMANDS DETECTED!
-    size: 5751 bytes
-    modified: 2026-01-14 06:34:01
-    permissions: 644
-    suspicious_commands: ['eval', 'exec']
-```
+- **Read-only** — the tool never modifies, deletes, or executes anything on your system
+- **Local AI** — with Ollama, no data leaves your machine
+- **Safe commands only** — the investigation feature uses a strict whitelist; `rm`, `curl`, `chmod` etc. are blocked
+- **API key safety** — `ai_settings.json` is gitignored; only the empty example is committed
 
 ---
 
-## 🔍 Suspicious Command Detection
+## 📋 Requirements
 
-Automatically flags files containing:
-
-- `curl`, `wget` - Download tools
-- `nc`, `netcat` - Network tools
-- `/dev/tcp` - Bash networking
-- `base64` - Encoding
-- `eval`, `exec` - Code execution
-
----
-
-## 📊 Output Files
-
-All scans are automatically saved to:
-
-```
-scans/scan_YYYYMMDD_HHMMSS.json
-```
-
-JSON structure:
-
-```json
-{
-  "metadata": {
-    "scan_time": "2025-01-19 03:56:56",
-    "platform": "Linux",
-    "system_info": {...}
-  },
-  "results": {
-    "1. Cron Jobs": {...},
-    "2. Systemd Services": [...]
-  }
-}
-```
-
----
-
-## 🛠️ Requirements
-
-- **Python**: 3.8 or higher
-- **Privileges**: Admin/root for complete scanning
-- **Dependencies**:
-  - colorama (terminal colors)
-  - pyfiglet (ASCII art)
-  - Standard library modules
-
----
-
-## 📚 Documentation
-
-- **[USAGE_GUIDE.md](USAGE_GUIDE.md)** - Complete usage instructions
-- **[PERSISTENCE_TECHNIQUES.md](PERSISTENCE_TECHNIQUES.md)** - All techniques reference
-- **[LINUX_IMPLEMENTATION.md](LINUX_IMPLEMENTATION.md)** - Linux implementation details
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Security analyst quick reference
+- Python 3.8+
+- `pip install -r requirements.txt` (Flask, requests, colorama, pyfiglet)
+- Admin/root for complete scanning (some techniques require elevated privileges)
 
 ---
 
 ## 🤝 Contributing
 
-**This is an open-source project and we welcome contributors!**
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/my-feature`
+3. Commit: `git commit -m 'Add my feature'`
+4. Push: `git push origin feature/my-feature`
 5. Open a Pull Request
 
-### Areas for Contribution
+---
 
-- 🪟 Windows technique testing and improvements
-- 🍎 macOS implementation
-- 🌐 Web viewer enhancements
-- 📝 Documentation improvements
-- 🐛 Bug fixes and optimizations
-- 🔍 Additional persistence techniques
-- 🌍 Internationalization
+## 📜 License
+
+MIT License — Copyright (c) 2025 [@iampopg](https://github.com/iampopg)
+
+If you use or modify this code, please credit **[@iampopg](https://github.com/iampopg)** and link back to this repository.
 
 ---
 
-## 📜 License & Credit
-
-### MIT License
-
-Copyright (c) 2025 [@iampopg](https://github.com/iampopg)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, subject to the following conditions:
-
-**The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.**
-
-### ⚠️ Credit Requirement
-
-**If you use, copy, or modify this code, you MUST:**
-
-- Give credit to **[@iampopg](https://github.com/iampopg)**
-- Include a link to the original repository
-- Maintain this credit requirement in derivative works
-
-**Example credit:**
-
-```
-Based on Persistence Finder by @iampopg
-https://github.com/iampopg/persistence-finder
-```
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
----
-
-## 🔒 Security Notice
-
-### Responsible Use
-
-- This tool is designed for defensive security purposes
-- Use only on systems you own or have authorization to test
-- Do not use for malicious purposes
-- Report any security issues responsibly
-
-### Limitations
-
-- Cannot detect kernel-level rootkits (use rkhunter, chkrootkit)
-- Cannot detect firmware implants
-- May produce false positives from legitimate software
-- Requires elevated privileges for complete scanning
-
----
-
-## 🌟 Comparison with Other Tools
-
-| Tool                         | Platform  | GUI    | Auto-Save | Open Source |
-| ---------------------------- | --------- | ------ | --------- | ----------- |
-| **Persistence Finder** | Win/Linux | ✅ Web | ✅        | ✅          |
-| Sysinternals Autoruns        | Windows   | ✅     | ❌        | ❌          |
-| chkrootkit                   | Linux     | ❌     | ❌        | ✅          |
-| rkhunter                     | Linux     | ❌     | ✅        | ✅          |
-
----
-
-## 📞 Support & Contact
-
-- **Issues**: [GitHub Issues](https://github.com/iampopg/persistence-finder/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/iampopg/persistence-finder/discussions)
-- **Author**: [@iampopg](https://github.com/iampopg)
-
----
-
-## 🎯 Roadmap
-
-- [X] Linux implementation (15 techniques)
-- [X] Windows implementation (20 techniques)
-- [X] Beautiful terminal output
-- [X] Web viewer
-- [X] JSON export
-- [ ] macOS implementation (6 techniques)
-- [ ] Baseline comparison mode
-- [ ] Hash verification
-- [ ] Threat intelligence integration
-- [ ] SIEM integration
-- [ ] Docker container
-- [ ] CI/CD integration
-
----
-
-## 🙏 Acknowledgments
-
-- MITRE ATT&CK Framework for persistence technique documentation
-- Security research community for real-world examples
-- All contributors and testers
-
----
-
-## ⭐ Star History
-
-If you find this tool useful, please consider giving it a star! ⭐
-
----
-
-**Made with ❤️ by [@iampopg](https://github.com/iampopg)**
-
-**For educational and authorized security testing purposes only.**
+**Made with ❤️ by [@iampopg](https://github.com/iampopg) — for authorized security testing only.**
