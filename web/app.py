@@ -86,6 +86,92 @@ def save_ai_settings(data):
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
+
+# ── Groq rate-limit constants ──────────────────────────────────────────────────────────────────────────────
+GROQ_SCAN_TOKEN_BUDGET   = 25000   # tokens per batch during scan
+GROQ_INVEST_TOKEN_BUDGET = 4000    # tokens per investigation round
+GROQ_MODELS = [
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+    'llama-3.3-70b-versatile',
+    'qwen/qwen3-32b',
+    'llama-3.1-8b-instant',
+]
+
+import time as _time
+_groq_last_call = 0.0
+
+
+def call_ai(prompt, settings, stream_cb=None):
+    """
+    Unified AI caller supporting Ollama and Groq.
+    stream_cb(token) is called for each token if provided.
+    Returns the full response text.
+    """
+    global _groq_last_call
+    provider = settings.get('provider', 'ollama')
+
+    if provider == 'groq':
+        api_key = settings.get('groq_api_key', '')
+        model   = settings.get('groq_model', 'meta-llama/llama-4-scout-17b-16e-instruct')
+        if not api_key:
+            raise ValueError('Groq API key not configured')
+        # Respect 30 RPM — minimum 2s between calls
+        elapsed = _time.time() - _groq_last_call
+        if elapsed < 2.1:
+            _time.sleep(2.1 - elapsed)
+        _groq_last_call = _time.time()
+        headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
+        payload = {
+            'model': model,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'stream': True,
+            'max_tokens': 2048,
+        }
+        resp = requests.post('https://api.groq.com/openai/v1/chat/completions',
+                             headers=headers, json=payload, stream=True, timeout=120)
+        if resp.status_code == 429:
+            retry = int(resp.headers.get('retry-after', 5))
+            _time.sleep(retry + 1)
+            resp = requests.post('https://api.groq.com/openai/v1/chat/completions',
+                                 headers=headers, json=payload, stream=True, timeout=120)
+        resp.raise_for_status()
+        full = ''
+        for line in resp.iter_lines():
+            if line and line.startswith(b'data: '):
+                raw = line[6:]
+                if raw == b'[DONE]': break
+                try:
+                    chunk = json.loads(raw)
+                    token = chunk['choices'][0]['delta'].get('content', '')
+                    if token:
+                        full += token
+                        if stream_cb: stream_cb(token)
+                except Exception:
+                    pass
+        return full
+
+    else:  # ollama
+        endpoint = settings.get('endpoint', 'http://localhost:11434')
+        model    = settings.get('model', '')
+        ep = endpoint if endpoint.endswith('/api/generate') else endpoint + '/api/generate'
+        resp = requests.post(ep, json={'model': model, 'prompt': prompt, 'stream': True},
+                             stream=True, timeout=600)
+        resp.raise_for_status()
+        full = ''
+        for line in resp.iter_lines():
+            if line:
+                try:
+                    chunk = json.loads(line)
+                    token = chunk.get('response', '')
+                    if token:
+                        full += token
+                        if stream_cb: stream_cb(token)
+                    if chunk.get('done'): break
+                except Exception:
+                    pass
+        return full
+
+
 def run_safe_cmd(cmd_str):
     """Validate and run a read-only command. Returns (output, error). OS-aware."""
     cmd_str = cmd_str.strip()

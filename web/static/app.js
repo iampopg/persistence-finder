@@ -338,22 +338,12 @@ async function runScan() {
   if (scanBtn) scanBtn.disabled = true;
   if (heroBtn) heroBtn.disabled = true;
 
-  // Pass AI config if available
-  const aiEndpoint = document.getElementById('ai-endpoint')?.value.trim() || '';
-  const aiModel    = document.getElementById('ai-model')?.value.trim() || '';
-  const params     = new URLSearchParams();
-  if (aiEndpoint && aiModel) {
-    params.set('ai_endpoint', aiEndpoint);
-    params.set('ai_model', aiModel);
-    addLog(`AI triage enabled: ${aiModel}`, '#58a6ff');
-  } else {
-    addLog('No AI configured — using rule-based detection only', '#d29922');
-    addLog('Tip: set up Ollama in the AI Analysis tab for smarter results', '#8b949e');
-  }
+  // AI config is read server-side from ai_settings.json — no DOM fields needed
+  addLog('Starting scan… AI triage uses saved settings', '#58a6ff');
 
   try {
     await new Promise((resolve, reject) => {
-      const url = '/api/run-scan-stream' + (params.toString() ? '?' + params.toString() : '');
+      const url = '/api/run-scan-stream';
       const es  = new EventSource(url);
 
       es.onmessage = async (e) => {
@@ -386,7 +376,15 @@ async function runScan() {
           }
         } catch (_) {}
       };
-      es.onerror = () => { es.close(); reject(new Error('Stream error')); };
+      es.onerror = (e) => {
+        // Only fail if we haven't received a 'done' yet
+        // EventSource readyState: 0=connecting, 1=open, 2=closed
+        if (es.readyState === 2) {
+          es.close();
+          reject(new Error('Connection closed unexpectedly'));
+        }
+        // readyState 0 = browser is auto-reconnecting, let it
+      };
     });
   } catch (e) {
     showToast('Scan failed: ' + e.message, 'error');
